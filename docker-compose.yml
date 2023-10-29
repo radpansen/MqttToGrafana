@@ -1,0 +1,63 @@
+version: "3"
+services:
+  mosquitto:
+    image: "eclipse-mosquitto"
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - "/home/pi/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf"
+      - "/home/pi/mosquitto/data:/mosquitto/data"
+      - "/home/pi/mosquitto/log:/mosquitto/log"
+    restart: "always"
+
+  node-red:
+    image: "nodered/node-red"
+    ports: 
+      - "1880:1880"
+    volumes:
+      - "nodered_data:/data"
+    depends_on:
+      - "mosquitto"
+    restart: "always"
+    
+  influxdb:
+    image: "influxdb:1.8.10"
+    volumes:
+      - "/home/pi/influxdb:/var/lib/influxdb"
+    ports:
+      - "8086:8086"
+    environment:
+      INFLUXDB_HTTP_AUTH_ENABLED: true
+      INFLUXDB_ADMIN_USER: $dbAdmin
+      INFLUXDB_ADMIN_PASSWORD: $dbAdminPassword
+      INFLUXDB_USER: $dbUser
+      INFLUXDB_USER_PASSWORD: $dbUserPassword
+      INFLUXDB_READ_USER: $dbReader
+      INFLUXDB_READ_USER_PASSWORD: $dbReaderPassword
+      INFLUXDB_WRITE_USER: $dbWriter
+      INFLUXDB_WRITE_USER_PASSWORD: $dbWriterPassword
+    restart: "always"
+    
+  chronograf:
+    image: "chronograf"
+    ports:
+      - "8888:8888"
+    depends_on: 
+      - "influxdb"
+    restart: "always"
+    
+  grafana:
+    image: "grafana/grafana:10.1.2"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - "influxdb"
+    volumes:
+      - "grafana_data:/var/lib/grafana"
+    restart: "always"  
+    
+volumes:
+  nodered_data:
+  grafana_data:
+  
